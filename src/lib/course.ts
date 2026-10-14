@@ -6,5 +6,5 @@ export interface Course {
 
 export const course: Course = {
   title: "Next.js Deployment & CI/CD",
-  lessons: 8,
+  // lessons: 8,
 };

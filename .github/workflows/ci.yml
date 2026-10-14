@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Prisma can DATABASE_URL ngay tu luc `npm ci` (postinstall -> prisma generate doc prisma.config.ts).
+    # Generate/lint/type-check/build KHONG ket noi DB that, nen neu chua tao secret thi dung URL gia.
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'mysql://ci:ci@localhost:3306/ci' }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET || 'ci-dummy-secret' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `next typegen` sinh cac kieu global (LayoutProps, PageProps...) vao .next/types.
+      # May CI khong co thu muc .next -> thieu buoc nay thi tsc bao "Cannot find name 'LayoutProps'".
+      - name: Type Check
+        run: |
+          npx next typegen
+          npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
